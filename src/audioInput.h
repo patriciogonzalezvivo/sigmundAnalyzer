@@ -4,12 +4,21 @@
 #include <pthread.h>
 #include <fftw3.h>
 
+#include "audioData.h"
+
 class AudioInput {
 public:
     AudioInput();
     virtual ~AudioInput();
   
-    char *chunk;
+    int     initDevice();
+    void    setupWindowFunc(float *w, int N);
+    void    quitNow();
+    int     mod( int i );
+
+    static void* audioCapture(void* a); //-------- capture: thread runs indep --
+
+    char    *chunk;
     float *b, *specslice, *bwin, *winf;
 
     unsigned char *pixels;
@@ -28,10 +37,10 @@ public:
     int dir;          /* rate == req_rate --> dir = 0 */
                         /* rate < req_rate  --> dir = -1 */
                         /* rate > req_rate  --> dir = 1 */
-    snd_pcm_uframes_t period_size;     // Period size (bytes)
-    snd_pcm_uframes_t req_size, size;  // requested and actual ALSA buffer size
-    snd_pcm_t *pcm_handle;        /* Handle for the PCM device */ 
-    snd_pcm_stream_t stream;     /* Playback stream */
+    snd_pcm_uframes_t   period_size;     // Period size (bytes)
+    snd_pcm_uframes_t   req_size, size;  // requested and actual ALSA buffer size
+    snd_pcm_t           *pcm_handle;        /* Handle for the PCM device */ 
+    snd_pcm_stream_t    stream;     /* Playback stream */
     /* This structure contains information about    */
     /* the hardware and can be used to specify the  */      
     /* configuration to be used for the PCM stream. */ 
@@ -40,11 +49,4 @@ public:
     /* The first number is the number of the soundcard, */
     /* the second number is the number of the device.   */
     char *pcm_name;
-
-    void setupWindowFunc(float *w, int N);
-    int initDevice();
-    void quitNow();
-    int mod( int i );
-  
-    static void* audioCapture(void* a); //-------- capture: thread runs indep --
 };

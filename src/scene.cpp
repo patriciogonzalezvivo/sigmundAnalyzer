@@ -16,8 +16,8 @@ void Scene::init() {
     // parse cmd line
     pause = false;
     
-    color_scale[0] = 160.0; // 8-bit intensity offset
-    color_scale[1] = 2.125; // 8-bit intensity slope (per dB units)
+    color_scale[0] = 20.0; // 8-bit intensity offset
+    color_scale[1] = 1.0;//2.125; // 8-bit intensity slope (per dB units)
 
     ai = new AudioInput();
     fps_tic = time(NULL); 
@@ -39,6 +39,7 @@ void Scene::hue(float x, unsigned char& _r, unsigned char& _g, unsigned char& _b
     float fac = 20.0 * color_scale[1];
     int k = (int)(color_scale[0] + fac*log10(x));
 
+    
     // Clamp
     if (k > 255) 
         k = 255; 

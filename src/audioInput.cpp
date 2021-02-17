@@ -31,6 +31,12 @@ AudioInput::AudioInput() {
     printf("memory buffer size %d samples\n", b_size);
 
     b = new float[b_size];              // our circular audio buffer
+
+    // analyzer.setup(44100, BUFFER_SIZE/2, 2);
+    // analyzer.peakHoldTime = 15; // hold longer
+    // analyzer.peakDecayRate = 0.95f; // decay slower
+    // analyzer.linearEQIntercept = 0.9f; // reduced gain at lowest frequency
+    // analyzer.linearEQSlope = 0.01f; // increasing gain at higher frequencies
     
     // win_size = 1 << param.twowinsize;     // FFT size
     win_size = 1 << 13;                 // FFT size
@@ -46,12 +52,13 @@ AudioInput::AudioInput() {
 
     // # freqs   ...spectrogram stuff
     // n_f = 560;
-    n_f = 128;
+    n_f = 128 * 2;//8;
+    // n_f = 16;
     specslice = new float[n_f];
     
     // # time windows: should be multiple of 4 for glDrawPixels
     // n_tw = 940;                     
-    n_tw = 128;
+    n_tw = 128 * 2;
     pixel_channels = 3;
     pixels = new unsigned char[n_f * n_tw * pixel_channels];
 
@@ -64,13 +71,12 @@ AudioInput::AudioInput() {
 
 AudioInput::~AudioInput() {
     snd_pcm_close (pcm_handle);
-    fftwf_destroy_plan(fftw_p);
+    // fftwf_destroy_plan(fftw_p);
 }
 
 void AudioInput::setupWindowFunc(float *w, int N) {
     float W;
     int i;
-    // if (verb) printf("windowtype=%d\n", param.windowtype);
     
     // switch (param.windowtype) {
     switch (2) {
@@ -84,7 +90,7 @@ void AudioInput::setupWindowFunc(float *w, int N) {
                 w[i] = (1.0F + cos(M_PI*(i-W)/W))/2;
             break;
         case 2:  // truncated Gaussian window (Gaussian tails + exp small error)
-            W = N/5.0F;    // width: keep small truncation but wide to not waste FFT
+            W = N/5.0F;         // width: keep small truncation but wide to not waste FFT
             for( i=0; i<N; ++i) 
                 w[i] = exp(-(i-N/2)*(i-N/2)/(2*W*W));
             break;
@@ -196,7 +202,8 @@ int AudioInput::mod( int i ) {  // true modulo (handles negative) into our buffe
       r += b_size;
     return r;
 }
-  
+
+
 void* AudioInput::audioCapture(void* a) { //-------- capture: thread runs indep --
 
     // still mostly Luke's code, some names changed. Aims to read 1 "period"
@@ -213,21 +220,15 @@ void* AudioInput::audioCapture(void* a) { //-------- capture: thread runs indep 
 
             // keep trying to get exactly 1 "period" of raw data from sound card...
             while ((n = snd_pcm_readi(ai->pcm_handle, ai->chunk, ai->frames_per_period)) < 0 ) {
-                //	  if (n == -EPIPE) fprintf(stderr, "Overrun occurred: %d\n", n); // broken pipe
                 fprintf(stderr, "Error occured while recording: %s\n", snd_strerror(n));
-
-                //n = snd_pcm_recover(ai->pcm_handle, n, 0); // ahb
-
-                //fprintf(stderr, "Error occured while recording: %s\n", snd_strerror(n));
                 snd_pcm_prepare(ai->pcm_handle);
-                //fprintf(stderr, "Dropped audio data (frames read n=%d)\n", n);
-            }  // n samples were got
+            }
 
-            // if (verb>1) 
-            //     printf("snd_pcm_readi got n=%d frames\n", n);
+            // printf("snd_pcm_readi got n=%d frames\n", n);
 
             Byte byte;
             int write_ptr, read_ptr;
+
             // read chunk into our buffer ai->b ...
             for (int i = 0; i < n; i++ ) {
                 read_ptr = i * ai->bytes_per_frame;
@@ -243,7 +244,7 @@ void* AudioInput::audioCapture(void* a) { //-------- capture: thread runs indep 
             // update index (in one go)
             ai->b_ind = ai->mod(ai->b_ind+n);
 
-	        // compute spectral slice of recent buffer history
+            // compute spectral slice of recent buffer history
             {
                 int N = ai->win_size;       // transform length
                 int nf = ai->n_f;           // # freqs to fill in powerspec
@@ -269,7 +270,7 @@ void* AudioInput::audioCapture(void* a) { //-------- capture: thread runs indep 
             }
         }
         else
-	        usleep(10000);  // wait 0.01 sec if paused (keeps thread CPU usage low)
+            usleep(10000);  // wait 0.01 sec if paused (keeps thread CPU usage low)
     }
 
     fprintf(stderr, "audioCapture thread exiting.\n");
