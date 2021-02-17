@@ -47,8 +47,8 @@
 static Scene scn;   // global scene which contains everything (eg via scn.ai)
 
 static int v4l2sink = -1;
-static char *vidsendbuf = NULL;
 static int vidsendsiz = 0;
+static char *vidsendbuf = NULL;
 
 //  GLUT's display routine: 2D layering by write order
 void display() {
@@ -170,7 +170,7 @@ static void open_vpipe(char * _dev, int width, int height) {
         exit(t);
 
     vidsendsiz = width * height * 3;
-    vidsendbuf = malloc( width * height * 3 );
+    vidsendbuf = (char*)malloc( width * height * 3 );
 }
 
 // ===========================================================================
