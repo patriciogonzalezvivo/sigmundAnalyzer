@@ -22,3 +22,9 @@ First you need to create a v4l2loopback device.
 sudo modprobe v4l2loopback devices=1 card_label="loopback"
 signmundAnalizer /dev/video4
 ```
+
+### TODO
+
+* bound the main loop to a frame rate
+* add octave analizer
+* add OSC for less often data... like octaves peaks and avarage
