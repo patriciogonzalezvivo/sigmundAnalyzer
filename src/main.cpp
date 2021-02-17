@@ -30,7 +30,6 @@
      and call other init/close routines from main().
  */
 
-#include "param.h"
 #include "scene.h"
 
 #include <linux/videodev2.h>
@@ -45,8 +44,6 @@
 #include <sys/ioctl.h>
 #include <sys/time.h>
 
-static int verb;    // global verbosity
-Param param;        // global parameters object
 static Scene scn;   // global scene which contains everything (eg via scn.ai)
 
 static int v4l2sink = -1;
@@ -178,21 +175,9 @@ static void open_vpipe(char * _dev, int width, int height) {
 
 // ===========================================================================
 int main(int argc, char** argv) {
-    verb = 0;          // 0 silent, 1 debug, etc
-    param.windowtype = 2;  // Gaussian
-
-    for (int i=1; i<argc; ++i) {  // .....Parse cmd line options....
-        if (!strcmp(argv[i], "-v"))  // option -v makes verbose
-            verb = 1;
-        else if (!strcmp(argv[i], "-sf")) {
-            sscanf(argv[++i], "%d", &scn.scroll_fac);  // read in scroll factor
-            if (scn.scroll_fac < 1) 
-                scn.scroll_fac = 1; // sanitize it
-        } 
-    }
     scn.init();       // true constructor for global scn object
 
-    open_vpipe("/dev/video4", scn.ai->n_f, scn.ai->n_tw);
+    open_vpipe(argv[1], scn.ai->n_f, scn.ai->n_tw);
 
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA);
