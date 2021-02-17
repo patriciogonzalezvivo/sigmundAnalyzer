@@ -1,32 +1,37 @@
 #pragma once
 
-#include <GL/glut.h>
-#include <GL/gl.h>
-
 #include <sys/time.h>
 
-#include "audioInput.h"
+#include "audioIn.h"
+#include "videoOut.h"
 
 class Scene {
 public:
     Scene();                    // trivial constructor, to prevent global init fiasco
     virtual ~Scene();           // destructor
 
-    void init();                // meaningful constructor - could move some to main to
-    void spectrogram();         // show spectrogram as 2D pixel array, w/ axes
+    bool init(char * _video, int _nFreq, int _tail);                // meaningful constructor - could move some to main to
+    bool update();
     void scroll();
 
-    void hue(float x, unsigned char& r, unsigned char& g, unsigned char& b );
+private:
+    AudioIn         *m_audio_in;
+    VideoOut        *m_video_out;
 
-    AudioInput* ai;
+    unsigned char   *m_pixels;
+    int             m_pixel_channels;
     
-    time_t  fps_tic;            // FPS time reference
-    timeval start_time;
-    float   color_scale[2];     // sg image log color mapping params
+    time_t          m_fps_tic;              // FPS time reference
+    timeval         m_start_time;
 
-    float   run_time;
-    int     frameCount, fps;    // frames per sec and counter
-    int     scroll_fac, scroll_count;
-    bool    pause;
+    float           m_intensity_offset;     // intensity offset
+    float           m_intensity_slope;      // intensity slope (per dB units)
+
+    float           m_run_time;
+    int             m_frameCount;
+    int             m_fps;
+    int             m_scroll_fac;
+    int             m_scroll_count;
+    bool            m_pause;
 
 };

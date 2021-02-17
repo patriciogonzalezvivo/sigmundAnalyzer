@@ -3,8 +3,19 @@
 #include <math.h>
 #include <iostream>
 
-Scene::Scene() {
-    scroll_fac = 2;
+Scene::Scene():
+    m_audio_in(NULL),
+    m_video_out(NULL),
+    m_pixels(NULL),
+    m_pixel_channels(3),
+    m_intensity_offset(20.0f),
+    m_intensity_slope(1.0f),
+    m_run_time(0.0f),
+    m_frameCount(0),
+    m_fps(0),
+    m_scroll_fac(2),
+    m_scroll_count(0),
+    m_pause(false) {
 }
 
 Scene::~Scene() {
@@ -12,41 +23,57 @@ Scene::~Scene() {
 }
 
 // meaningful constructor - could move some to main to
-void Scene::init() {
-    // parse cmd line
-    pause = false;
+bool Scene::init(char * _video, int _nFreq, int _tail) {
+    m_audio_in = new AudioIn(_nFreq);
+
+    m_video_out = new VideoOut();
+    m_video_out->init(_video, _nFreq, _tail);
+
+    m_pixel_channels = 3;
+    m_pixels = new unsigned char[_nFreq * _tail * m_pixel_channels];
+
+    gettimeofday(&m_start_time, NULL);
+
+    return true;
+}
+
+
+bool Scene::update() {
+    ++m_frameCount;        // compute FPS...
     
-    color_scale[0] = 20.0; // 8-bit intensity offset
-    color_scale[1] = 1.0;//2.125; // 8-bit intensity slope (per dB units)
+    time_t now = time(NULL);     // integer in seconds
 
-    ai = new AudioInput();
-    fps_tic = time(NULL); 
-    frameCount = fps = 0;
-    scroll_count = 0;
+    if (now > m_fps_tic) {    // advanced by at least 1 sec?
+        m_fps = m_frameCount;
+        m_frameCount = 0;
+        m_fps_tic = now;
+    }
 
-    gettimeofday(&start_time, NULL);
-    run_time = 0.0;
+    if (!m_audio_in->pause) {  // scroll every scroll_fac vSyncs, if not paused:
+        timeval nowe;  // update runtime
+        gettimeofday(&nowe, NULL);
+
+        m_run_time += 1/60.0;                // is less jittery, approx true
+        m_run_time = fmod(m_run_time, 100.0);// wrap time label after 100 secs
+
+        ++m_scroll_count;
+        if (m_scroll_count == m_scroll_fac) {
+            scroll();   // add spec slice to sg & scroll
+            m_scroll_count = 0;
+            if (m_video_out)
+                if (!m_video_out->send(m_pixels))
+                    return false;
+        }
+    }
+
+    return true;
 }
 
 float saturate(float value) { 
     return std::max (0.0f, std::min (1.0f, value)); 
 }
 
-// http://dystopiancode.blogspot.com/2012/06/yuv-rgb-conversion-algorithms-in-c.html
-
-void Scene::hue(float x, unsigned char& _r, unsigned char& _g, unsigned char& _b ) {
-    // color_scale[1] units: intensity/dB
-    float fac = 20.0 * color_scale[1];
-    int k = (int)(color_scale[0] + fac*log10(x));
-
-    
-    // Clamp
-    if (k > 255) 
-        k = 255; 
-    else if (k < 0) 
-        k = 0;
-
-    float hue = k/255.0f;       // 0<a<1. now map from [0,1] to rgb in [0,1]
+void hue(float hue, unsigned char& _r, unsigned char& _g, unsigned char& _b ) {
     float r = saturate( abs( fmod( hue * 6., 6.) - 3.) - 1. );
     float g = saturate( abs( fmod( hue * 6. + 4., 6.) - 3.) - 1. );
     float b = saturate( abs( fmod( hue * 6. + 2., 6.) - 3.) - 1. );
@@ -62,33 +89,36 @@ void Scene::hue(float x, unsigned char& _r, unsigned char& _g, unsigned char& _b
     _b = static_cast<unsigned char> (int(b * 255));
 }
 
+
 void Scene::scroll() {
     // Scroll spectrogram data 1 pixel in t direction, add new col & make 8bit
     int x, y, i, ii;
-    int w = ai->n_f;
-    int h = ai->n_tw;
-    int c = ai->pixel_channels;
+    int w = m_video_out->getWidth();
+    int h = m_video_out->getHeight();
 
     // float: NB x (ie t) is the fast storage direc
     for (x = 0; x < w; ++x) {
         for (y = 0; y < h - 1; ++y) {
-            i = (y * w + x) * c;
-            ii = ((y + 1) * w + x) * c;
-            ai->pixels[i] = ai->pixels[ii];
-            ai->pixels[i + 1] = ai->pixels[ii + 1];
-            ai->pixels[i + 2] = ai->pixels[ii + 2];
+            i = (y * w + x) * m_pixel_channels;
+            ii = ((y + 1) * w + x) * m_pixel_channels;
+            m_pixels[i] = m_pixels[ii];
+            m_pixels[i + 1] = m_pixels[ii + 1];
+            m_pixels[i + 2] = m_pixels[ii + 2];
         }
     }
     
-    for (x = 0; x < w; ++x) {
-        i = ((h - 1) * w + x) * c;
-        hue(ai->specslice[x], ai->pixels[i], ai->pixels[i + 1], ai->pixels[i + 2]);
-    }
-}
+    float fac = 20.0 * m_intensity_slope;
+    for (x = 0; x < m_audio_in->n_f; ++x) {
+        i = ((h - 1) * w + x) * m_pixel_channels;
+        float value = m_audio_in->specslice[x];
 
-// show spectrogram as 2D pixel array, w/ axes............
-void Scene::spectrogram() {
-    glDisable(GL_DEPTH_TEST); 
-    glDisable(GL_BLEND);
-    glDrawPixels(ai->n_f, ai->n_tw, GL_RGB, GL_UNSIGNED_BYTE, ai->pixels);
+        int k = (int)(m_intensity_offset + fac * log10(value));
+        // Clamp
+        if (k > 255) 
+            k = 255; 
+        else if (k < 0) 
+            k = 0;
+
+        hue(k/255.0f, m_pixels[i], m_pixels[i + 1], m_pixels[i + 2]);
+    }
 }

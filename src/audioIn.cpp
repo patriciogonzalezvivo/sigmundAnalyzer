@@ -1,4 +1,4 @@
-#include "audioInput.h"
+#include "audioIn.h"
 
 #include <iostream>
 #include <math.h>
@@ -7,7 +7,7 @@
 #define M_PI  3.14159265358979323846
 #endif
 
-AudioInput::AudioInput() {
+AudioIn::AudioIn(int nFreq) {
     quit = false;
     pause = false;
     channels = 2;                       // Had to change to stereo for System76 ! (was mono)
@@ -50,17 +50,9 @@ AudioInput::AudioInput() {
     // set up fast in-place single-precision real-to-half-complex DFT:
     fftw_p = fftwf_plan_r2r_1d(win_size, bwin, bwin, FFTW_R2HC, FFTW_MEASURE);
 
-    // # freqs   ...spectrogram stuff
-    // n_f = 560;
-    n_f = 128 * 2;//8;
-    // n_f = 16;
+    // # freqs   ...spectrogram stuff;
+    n_f = nFreq;
     specslice = new float[n_f];
-    
-    // # time windows: should be multiple of 4 for glDrawPixels
-    // n_tw = 940;                     
-    n_tw = 128 * 2;
-    pixel_channels = 3;
-    pixels = new unsigned char[n_f * n_tw * pixel_channels];
 
     Hz_per_pixel = 1.0F / (win_size*dt);
     printf("Hz per pixel = %.3f\n", Hz_per_pixel);
@@ -69,12 +61,12 @@ AudioInput::AudioInput() {
     pthread_create(&capture_thread, NULL, audioCapture, (void*)this); // this?
 }
 
-AudioInput::~AudioInput() {
+AudioIn::~AudioIn() {
     snd_pcm_close (pcm_handle);
     // fftwf_destroy_plan(fftw_p);
 }
 
-void AudioInput::setupWindowFunc(float *w, int N) {
+void AudioIn::setupWindowFunc(float *w, int N) {
     float W;
     int i;
     
@@ -99,7 +91,7 @@ void AudioInput::setupWindowFunc(float *w, int N) {
     }
 }
 
-int AudioInput::initDevice() {  // ........ set up sound card for recording ........
+int AudioIn::initDevice() {  // ........ set up sound card for recording ........
     // ALSA tutorial, taken from http://www.suse.de/~mana/alsa090_howto.html
     
     stream = SND_PCM_STREAM_CAPTURE;
@@ -184,7 +176,7 @@ int AudioInput::initDevice() {  // ........ set up sound card for recording ....
     return 1;
 }
   
-void AudioInput::quitNow() {
+void AudioIn::quitNow() {
     quit = true;
     //      pthread_kill_other_threads_np();
     snd_pcm_close (pcm_handle);
@@ -195,7 +187,7 @@ union Byte {                    // used to convert from signed to unsigned
     char char_val;
 };
   
-int AudioInput::mod( int i ) {  // true modulo (handles negative) into our buffer b
+int AudioIn::mod( int i ) {  // true modulo (handles negative) into our buffer b
     // wraps i to lie in [0, (b_size-1)]. rewritten Barnett
     int r = i % b_size;
     if (r<0)
@@ -204,12 +196,12 @@ int AudioInput::mod( int i ) {  // true modulo (handles negative) into our buffe
 }
 
 
-void* AudioInput::audioCapture(void* a) { //-------- capture: thread runs indep --
+void* AudioIn::audioCapture(void* a) { //-------- capture: thread runs indep --
 
     // still mostly Luke's code, some names changed. Aims to read 1 "period"
     // (ALSA device setting) into the current write index of our ai->b buffer.
     fprintf(stderr, "audioCapture thread started...\n");
-    AudioInput* ai = (AudioInput*) a;  // shares data with main thread = cool!
+    AudioIn* ai = (AudioIn*) a;  // shares data with main thread = cool!
     
     float inv256 = 1.0 / 256.0;
     float inv256_2 = inv256*inv256;

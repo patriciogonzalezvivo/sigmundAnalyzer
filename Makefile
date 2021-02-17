@@ -6,7 +6,7 @@ OBJECTS := $(SOURCES:.cpp=.o)
 
 INCLUDES +=	-Isrc/ -Iinclude/
 CFLAGS += -Wall -O2 -std=c++11 -fpermissive 
-LDFLAGS += -lglut -lGL -lasound -lfftw3f -lm -pthread 
+LDFLAGS += -lasound -lfftw3f -lm -pthread 
 
 all: $(EXE)
 

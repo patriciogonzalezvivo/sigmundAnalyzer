@@ -4,12 +4,10 @@
 #include <pthread.h>
 #include <fftw3.h>
 
-#include "audioData.h"
-
-class AudioInput {
+class AudioIn {
 public:
-    AudioInput();
-    virtual ~AudioInput();
+    AudioIn(int nFreq);
+    virtual ~AudioIn();
   
     int     initDevice();
     void    setupWindowFunc(float *w, int N);
@@ -19,15 +17,21 @@ public:
     static void* audioCapture(void* a); //-------- capture: thread runs indep --
 
     char    *chunk;
-    float *b, *specslice, *bwin, *winf;
+    float   *b;
+    float   *specslice;
+    float   *bwin;
+    float   *winf;
 
-    unsigned char *pixels;
-    int pixel_channels;
-
-    int b_ind, b_size, n_f, n_tw, win_size;
-    float dt, t_memory, Hz_per_pixel;
+    int     b_ind;
+    int     b_size;
+    int     n_f; 
+    int     win_size;
+    float   dt;
+    float   t_memory;
+    float   Hz_per_pixel;
   
-    bool quit, pause;
+    bool    quit;
+    bool    pause;
     pthread_t capture_thread;
     fftwf_plan fftw_p;
 
@@ -48,5 +52,6 @@ public:
     /* Name of the PCM device, like plughw:0,0          */
     /* The first number is the number of the soundcard, */
     /* the second number is the number of the device.   */
+    
     char *pcm_name;
 };
