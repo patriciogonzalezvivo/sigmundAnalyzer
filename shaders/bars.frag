@@ -2,12 +2,11 @@
 precision mediump float;
 #endif
 
-uniform vec2        u_resolution;
-
 uniform sampler2D   u_tex0;
 uniform vec2        u_tex0Resolution;
+uniform vec2        u_resolution;
 
-#include "glslLib/color/space/all.glsl"
+#include "rainbow2float.glsl"
 
 void main (void) {
     vec3 color = vec3(0.0);
@@ -17,12 +16,10 @@ void main (void) {
     float press = 256.0;
     vec2 st_i = floor(st * press) / press;
 
-
     vec3 hue = texture2D(u_tex0,  pixel * 0.5 + vec2(st_i.x, 0.0)).rgb;
-    float value = rgb2depth(hue);
+    float value = rainbow2float(hue);
 
     color += step(st.y, value) * 0.75;
-    color += texture2D(u_tex0,  st).rgb;
 
     gl_FragColor = vec4(color,1.0);
 }

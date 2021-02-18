@@ -1,4 +1,4 @@
-EXE = sigmundAnalizer
+EXE = sigmund
 CXX = g++
 SOURCES := 	$(wildcard src/*.cpp)
 HEADERS := 	$(wildcard src/*.h)
