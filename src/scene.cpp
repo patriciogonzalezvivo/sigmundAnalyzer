@@ -24,7 +24,7 @@ Scene::~Scene() {
 
 // meaningful constructor - could move some to main to
 bool Scene::init(char * _video, int _nFreq, int _tail) {
-    m_audio_in = new AudioIn(_nFreq);
+    m_audio_in = new AudioIn("plughw:0,0", _nFreq, 44100, 2);
 
     m_video_out = new VideoOut();
     m_video_out->init(_video, _nFreq, _tail);
@@ -32,7 +32,7 @@ bool Scene::init(char * _video, int _nFreq, int _tail) {
     m_pixel_channels = 3;
     m_pixels = new unsigned char[_nFreq * _tail * m_pixel_channels];
 
-    gettimeofday(&m_start_time, NULL);
+    // gettimeofday(&m_start_time, NULL);
 
     return true;
 }
@@ -108,9 +108,9 @@ void Scene::scroll() {
     }
     
     float fac = 20.0 * intensity_slope;
-    for (x = 0; x < m_audio_in->n_f; ++x) {
+    for (x = 0; x < m_audio_in->getTotalFreq(); ++x) {
         i = ((h - 1) * w + x) * m_pixel_channels;
-        float value = m_audio_in->specslice[x];
+        float value = m_audio_in->slice[x];
 
         int k = (int)(intensity_offset + fac * log10(value));
         // Clamp

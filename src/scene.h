@@ -25,7 +25,7 @@ private:
     int             m_pixel_channels;
     
     time_t          m_fps_tic;              // FPS time reference
-    timeval         m_start_time;
+    // timeval         m_start_time;
 
     float           m_run_time;
     int             m_frameCount;

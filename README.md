@@ -57,7 +57,5 @@ glslViewer shaders/waterfall.frag /dev/video9 -l
 
 ### TODO
 
-* bound the main loop to a frame rate
-* parse through so user can define: device out, width, height and fft parameters
 * Add octave analizer, beat detection
 * Add OSC for less often data... like octaves peaks and avarage
