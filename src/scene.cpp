@@ -4,12 +4,12 @@
 #include <iostream>
 
 Scene::Scene():
+    intensity_offset(20.0f),
+    intensity_slope(1.0f),
     m_audio_in(NULL),
     m_video_out(NULL),
     m_pixels(NULL),
     m_pixel_channels(3),
-    m_intensity_offset(20.0f),
-    m_intensity_slope(1.0f),
     m_run_time(0.0f),
     m_frameCount(0),
     m_fps(0),
@@ -107,12 +107,12 @@ void Scene::scroll() {
         }
     }
     
-    float fac = 20.0 * m_intensity_slope;
+    float fac = 20.0 * intensity_slope;
     for (x = 0; x < m_audio_in->n_f; ++x) {
         i = ((h - 1) * w + x) * m_pixel_channels;
         float value = m_audio_in->specslice[x];
 
-        int k = (int)(m_intensity_offset + fac * log10(value));
+        int k = (int)(intensity_offset + fac * log10(value));
         // Clamp
         if (k > 255) 
             k = 255; 

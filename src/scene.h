@@ -10,9 +10,12 @@ public:
     Scene();                    // trivial constructor, to prevent global init fiasco
     virtual ~Scene();           // destructor
 
-    bool init(char * _video, int _nFreq, int _tail);                // meaningful constructor - could move some to main to
-    bool update();
-    void scroll();
+    bool    init(char * _video, int _nFreq, int _tail);                // meaningful constructor - could move some to main to
+    bool    update();
+    void    scroll();
+
+    float   intensity_offset;     // intensity offset
+    float   intensity_slope;      // intensity slope (per dB units)
 
 private:
     AudioIn         *m_audio_in;
@@ -23,9 +26,6 @@ private:
     
     time_t          m_fps_tic;              // FPS time reference
     timeval         m_start_time;
-
-    float           m_intensity_offset;     // intensity offset
-    float           m_intensity_slope;      // intensity slope (per dB units)
 
     float           m_run_time;
     int             m_frameCount;
