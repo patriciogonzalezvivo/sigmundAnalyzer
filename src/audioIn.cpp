@@ -63,7 +63,7 @@ AudioIn::AudioIn(const char *_device, int _nFreq, int _sampleRate, int _channels
     m_windowed_buffer = new float[m_window_size];         // windowed recent audio data
     m_window_functions = new float[m_window_size];
 
-    fillWindowFunc(TRUNCATED_GAUSSIAN_WINDOW, m_window_functions, m_window_size);    // windowing function
+    fillWindowFunc(HANN_WINDOW, m_window_functions, m_window_size);    // windowing function
     
     // set up fast in-place single-precision real-to-half-complex DFT:
     m_fftw = fftwf_plan_r2r_1d(m_window_size, m_windowed_buffer, m_windowed_buffer, FFTW_R2HC, FFTW_MEASURE);
@@ -94,14 +94,15 @@ int AudioIn::init(const char *_device, snd_pcm_uframes_t _buffer_size, int nperi
     /* This structure contains information about    */
     /* the hardware and can be used to specify the  */      
     /* configuration to be used for the PCM stream. */ 
-    snd_pcm_hw_params_t *hwparams;
+    snd_pcm_hw_params_t *pcm_hwparams;
+    snd_pcm_uframes_t   pcm_buffer_size;
     
     /* Init pcm_name. Of course, later you */
     /* will make this configurable ;-)     */
     m_pcm_name = strdup(_device);
 
     /* Allocate the snd_pcm_hw_params_t structure on the stack. */
-    snd_pcm_hw_params_alloca(&hwparams);
+    snd_pcm_hw_params_alloca(&pcm_hwparams);
     /* Open PCM. The last parameter of this function is the mode. */
     /* If this is set to 0, the standard mode is used. Possible   */
     /* other values are SND_PCM_NONBLOCK and SND_PCM_ASYNC.       */ 
@@ -113,8 +114,8 @@ int AudioIn::init(const char *_device, snd_pcm_uframes_t _buffer_size, int nperi
         fprintf(stderr, "Error opening PCM device %s\n", m_pcm_name);
         return(-1);
     }
-    /* Init hwparams with full configuration space */
-    if (snd_pcm_hw_params_any(m_pcm_handle, hwparams) < 0) {
+    /* Init pcm_hwparams with full configuration space */
+    if (snd_pcm_hw_params_any(m_pcm_handle, pcm_hwparams) < 0) {
         fprintf(stderr, "Can not configure this PCM device.\n");
         return(-1);
     }
@@ -124,13 +125,13 @@ int AudioIn::init(const char *_device, snd_pcm_uframes_t _buffer_size, int nperi
     /* There are also access types for MMAPed */
     /* access, but this is beyond the scope   */
     /* of this introduction.                  */
-    if (snd_pcm_hw_params_set_access(m_pcm_handle, hwparams, SND_PCM_ACCESS_RW_INTERLEAVED) < 0) {
+    if (snd_pcm_hw_params_set_access(m_pcm_handle, pcm_hwparams, SND_PCM_ACCESS_RW_INTERLEAVED) < 0) {
         fprintf(stderr, "Error setting access.\n");
         return(-1);
     }
     
     /* Set sample format */
-    if (snd_pcm_hw_params_set_format(m_pcm_handle, hwparams, SND_PCM_FORMAT_S16_LE) < 0) {
+    if (snd_pcm_hw_params_set_format(m_pcm_handle, pcm_hwparams, SND_PCM_FORMAT_S16_LE) < 0) {
         fprintf(stderr, "Error setting format.\n");
         return(-1);
     }
@@ -138,7 +139,7 @@ int AudioIn::init(const char *_device, snd_pcm_uframes_t _buffer_size, int nperi
     /* Set sample rate. If the requested rate is not supported */
     /* by the hardware, use nearest possible rate.         */ 
     m_sample_rate = m_sample_rate_requested;
-    if (snd_pcm_hw_params_set_rate_near(m_pcm_handle, hwparams, (uint*)&m_sample_rate, 0) < 0) {
+    if (snd_pcm_hw_params_set_rate_near(m_pcm_handle, pcm_hwparams, (uint*)&m_sample_rate, 0) < 0) {
         fprintf(stderr, "Error setting rate.\n");
         return(-1);
     }
@@ -148,30 +149,30 @@ int AudioIn::init(const char *_device, snd_pcm_uframes_t _buffer_size, int nperi
     }
     
     /* Set number of channels */
-    if (snd_pcm_hw_params_set_channels(m_pcm_handle, hwparams, m_channels) < 0) {
+    if (snd_pcm_hw_params_set_channels(m_pcm_handle, pcm_hwparams, m_channels) < 0) {
         fprintf(stderr, "Error setting channels.\n");
         return(-1);
     }
     
     /* Set number of periods. Periods used to be called fragments. */ 
-    if (snd_pcm_hw_params_set_periods(m_pcm_handle, hwparams, nperiods, 0) < 0) {
+    if (snd_pcm_hw_params_set_periods(m_pcm_handle, pcm_hwparams, nperiods, 0) < 0) {
         fprintf(stderr, "Error setting number of periods.\n");
         return(-1);
     }
     /* Set buffer size (in frames). The resulting latency is given by */
     /* latency = period_size * nperiods / (rate * m_bytes_per_frame)     */
-    m_alsa_buffer_size = _buffer_size;
-    if (snd_pcm_hw_params_set_buffer_size_near(m_pcm_handle, hwparams, &m_alsa_buffer_size) < 0) {
+    pcm_buffer_size = _buffer_size;
+    if (snd_pcm_hw_params_set_buffer_size_near(m_pcm_handle, pcm_hwparams, &pcm_buffer_size) < 0) {
         fprintf(stderr, "Error setting buffersize.\n");
         return(-1);
     }
 
-    if( m_alsa_buffer_size != _buffer_size ) {
-        fprintf(stderr, "Buffer size %d is not supported, using %d instead.\n", (int)_buffer_size, (int)m_alsa_buffer_size);
+    if( pcm_buffer_size != _buffer_size ) {
+        fprintf(stderr, "Buffer size %d is not supported, using %d instead.\n", (int)_buffer_size, (int)pcm_buffer_size);
     }
     
     /* Apply HW parameter settings to PCM device and prepare device  */
-    if (snd_pcm_hw_params(m_pcm_handle, hwparams) < 0) {
+    if (snd_pcm_hw_params(m_pcm_handle, pcm_hwparams) < 0) {
         fprintf(stderr, "Error setting HW params.\n");
         return(-1);
     }
@@ -233,7 +234,7 @@ void* AudioIn::audioCapture(void* a) {
                 byte.char_val = tmp[read_ptr];
 
                 // compute float in [-1/2,1/2) from 16-bit raw... (LSB unsigned char)
-                ai->m_buffer[write_ptr] = (float)tmp[read_ptr+1]*inv256 + (float)byte.uchar_val*inv256_2;
+                ai->m_buffer[write_ptr] = (float)tmp[read_ptr+1] * inv256 + (float)byte.uchar_val * inv256_2;
             }
 
             // update index (in one go)
@@ -257,7 +258,7 @@ void* AudioIn::audioCapture(void* a) {
                 }
 
                 // zero-freq has no imag
-                ai->slice[0] = ai->m_windowed_buffer[0] *ai->m_windowed_buffer[0];
+                ai->slice[0] = ai->m_windowed_buffer[0] * ai->m_windowed_buffer[0];
 
                 // compute power spectrum from hc dft
                 for (int i = 1; i < n; ++i)

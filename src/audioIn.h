@@ -40,19 +40,17 @@ private:
   
     pthread_t   m_thread;
     fftwf_plan  m_fftw;
+    snd_pcm_t*  m_pcm_handle;        /* Handle for the PCM device */ 
 
     // Audio device data (modified from ALSA tutorial)
     int         m_channels;
     int         m_bytes_per_frame;
     int         m_frames_per_period;
 
-    snd_pcm_uframes_t   m_alsa_buffer_size;  // requested and actual ALSA buffer size
-    snd_pcm_t*          m_pcm_handle;        /* Handle for the PCM device */ 
-    
     /* Name of the PCM device, like plughw:0,0          */
     /* The first number is the number of the soundcard, */
     /* the second number is the number of the device.   */
-    char *              m_pcm_name;
+    char *      m_pcm_name;
 
-    bool                m_quit;
+    bool         m_quit;
 };

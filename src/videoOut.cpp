@@ -17,7 +17,6 @@ VideoOut::VideoOut():
     m_height(0),
     m_sink(-1), 
     m_size(0)
-    // m_buffer(NULL) 
     {
 
 }
@@ -26,7 +25,7 @@ VideoOut::~VideoOut() {
 
 }
 
-bool VideoOut::init(char *_device, int _width, int _height) {
+bool VideoOut::start(const char *_device, int _width, int _height) {
     m_sink = open(_device, O_WRONLY);
 
     if (m_sink < 0) {
@@ -58,15 +57,9 @@ bool VideoOut::init(char *_device, int _width, int _height) {
     if (t < 0 )
         exit(t);
 
-    // m_buffer = (char*)malloc(m_size);
-
     return true;
 }
 
 bool VideoOut::send(unsigned char *_pixels) {
-    return send(_pixels, m_size);
-}
-
-bool VideoOut::send(unsigned char *_pixels, int _size) {
-    return (m_size == write(m_sink, _pixels, _size));
+    return (m_size == write(m_sink, _pixels, m_size));
 }
