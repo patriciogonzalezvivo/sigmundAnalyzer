@@ -1,7 +1,7 @@
-#ifndef FNC_RAINBOW2FLOAT
-#define FNC_RAINBOW2FLOAT
+#ifndef FNC_HUE2FLOAT
+#define FNC_HUE2FLOAT
 
-float rainbow2float(vec3 RGB) {
+float hue2float(vec3 RGB) {
     float value = 0.0; 
 
     float RGBMin = min(min(RGB.r, RGB.g), RGB.b);

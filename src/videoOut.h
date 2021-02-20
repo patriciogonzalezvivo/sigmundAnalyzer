@@ -12,9 +12,9 @@ public:
     int     getHeight(){ return m_height; }
 
 private:
-    int m_width;
-    int m_height;
+    int     m_width;
+    int     m_height;
 
-    int m_sink;
-    int m_size;
+    int     m_sink;
+    int     m_size;
 };
