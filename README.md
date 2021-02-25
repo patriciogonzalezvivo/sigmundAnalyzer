@@ -1,4 +1,4 @@
-# sigmundAnalizer
+# sigmundAnalyzer
 
 Real-time audio spectrogram to loopback v4l
 
@@ -19,8 +19,8 @@ sudo apt-get install libfftw3-dev libasound2 libasound2-dev v4l2loopback-dkms v4
 Clone, compile and install:
 
 ```
-git clone https://github.com/patriciogonzalezvivo/sigmundAnalizer.git
-cd  sigmundAnalizer
+git clone https://github.com/patriciogonzalezvivo/sigmundAnalyzer.git
+cd  sigmundAnalyzer
 make
 sudo make install
 ```
