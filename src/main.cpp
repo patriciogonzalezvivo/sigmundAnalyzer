@@ -97,8 +97,9 @@ int main(int argc, char** argv) {
     AudioIn *audio_in = new AudioIn();
 
     int window_size = 1 << 13;  // 8192 samples (around 0.19 sec). Remains fixed (min 10, max 18)
-    Spectrogram *spec = new Spectrogram(window_size, frequencies);
-    audio_in->start(audio_path.c_str(), [&](Buffer* _buffer){ spec->update(_buffer); }, 44100, 2);
+    int sample_rate = 44100;
+    Spectrogram *spec = new Spectrogram(sample_rate, window_size, frequencies);
+    audio_in->start(audio_path.c_str(), [&](Buffer* _buffer){ spec->update(_buffer); }, sample_rate, 2);
 
     VideoOut *video_out = new VideoOut();
     video_out->start(video_path.c_str(), frequencies, height);

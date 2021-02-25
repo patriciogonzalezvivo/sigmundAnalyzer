@@ -6,7 +6,7 @@
 class Spectrogram {
 public:
 
-    Spectrogram( int window_size, int number_of_frequencies );
+    Spectrogram(int sample_rate, int window_size, int number_of_frequencies );
     virtual ~Spectrogram();
 
     int     getTotalFrequencies() { return m_nFreq; }
@@ -14,10 +14,10 @@ public:
 
     void    update(Buffer* _buffer);
 
-
 private:
     fftwf_plan  m_fftw;
 
+    float       m_hzPixel;
     float*      m_freqs             = NULL;
     float*      m_windowed_buffer   = NULL;
     float*      m_window_functions  = NULL;
