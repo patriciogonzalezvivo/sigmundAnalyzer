@@ -40,7 +40,7 @@ ls /dev/video*
 Then you can run the program pointing that device as destination:
 
 ```
-signmund /dev/video9
+sigmund --spectogram /dev/video9
 ```
 
 Then you can use GlslViewer to read from `/dev/video9` and visualize the data as you prefere:

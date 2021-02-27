@@ -23,7 +23,7 @@ void printUsage(char * executableName) {
     std::cerr << "// A companion console program that creates a FFT waterfall from the mic and stream it in as a loopback camera device. "<< std::endl;
     std::cerr << "// "<< std::endl;
     std::cerr << "// Usage:" << std::endl;
-    std::cerr << executableName << " <dev_video> [--frequencies <width>] [--buffer_length <height>]" << std::endl;
+    std::cerr << executableName << " [-i|--audio <path>] [-f | --frequencies <n>] [--spectogram <dev_video>] [--spectogram_length <length>]" << std::endl;
 }
 
 void scroll(float *_slice, unsigned char* _pixels, int _w, int _h) {
@@ -71,13 +71,15 @@ int main(int argc, char** argv) {
             else
                 std::cout << "Argument '" << argument << "' should be followed by the ALSA address for the audio in. Using default: " << audio_path << std::endl;
         }
-        else if (argument == "--frequencies" ) {
+        else if (argument == "--frequencies" ||
+                 argument == "-f" ) {
             if (++i < argc)
                 frequencies = toInt(std::string(argv[i]));
             else
                 std::cout << "Argument '" << argument << "' should be followed by the number of frequencies to analize. Using default: " << frequencies << std::endl;
         }
-        else if (   argument == "--spectogram" ) {
+        else if (   argument == "--spectogram" ||
+                    argument == "-s" ) {
             if (++i < argc)
                 spectogram_video_path = std::string(argv[i]);
             else
@@ -87,11 +89,13 @@ int main(int argc, char** argv) {
             if (++i < argc)
                 spectogram_length = toInt(std::string(argv[i]));
             else
-                std::cout << "Argument '" << argument << "' should be followed by the number length of the apectogram. Using default: " << spectogram_length << std::endl;
+                std::cout << "Argument '" << argument << "' should be followed by the number length of the spectogram. Using default: " << spectogram_length << std::endl;
         }
         else if (   argument == "--spectogram_intensity_slope" ) {
             if (++i < argc)
                 spectogram_intensity_slope = toFloat(std::string(argv[i]));
+            else
+                std::cout << "Argument '" << argument << "' should be followed by the intensity slope for the spectogram. Using default: " << spectogram_intensity_slope << std::endl;
         }
         
     }
@@ -112,6 +116,7 @@ int main(int argc, char** argv) {
     }
 
     int scroll_count = 0;
+    float prev_main_freq = 0.f;
     int prev_midi_note = -1;
     while (true) {
 
@@ -126,6 +131,7 @@ int main(int argc, char** argv) {
             }
         }
 
+        // Pitch detection
         float main_freq = analyzer->getMainFrequency();
         int midi_note = analyzer->getMidiNoteFor(main_freq);
         if (midi_note != prev_midi_note) {
@@ -133,7 +139,7 @@ int main(int argc, char** argv) {
 
             if (midi_note > 0) {
                 std::cout << "Pitch change to " << analyzer->getNoteFor(main_freq);
-                std::cout << analyzer->getOctaveFor(main_freq) << " ( midi:" << midi_note << " " << main_freq << "Hz)" << std::endl;
+                std::cout << analyzer->getOctaveFor(main_freq) << " (MIDI #" << midi_note << " " << main_freq << "Hz)" << std::endl;
             }
         }
 
