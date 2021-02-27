@@ -22,7 +22,6 @@ public:
     Buffer*     getBuffer() { return m_buffer; }
 
     void        quitNow();
-    bool        pause;
 private:
     int         openDevice(const char *_device, int _sample_rate, snd_pcm_uframes_t _buffer_size, int nperiod);
 

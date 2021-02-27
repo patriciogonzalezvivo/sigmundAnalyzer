@@ -4,7 +4,6 @@
 #include <math.h>
 
 AudioIn::AudioIn():
-    pause(false),
     m_quit(false) {
 }
 
@@ -14,7 +13,6 @@ AudioIn::~AudioIn() {
 
 
 bool AudioIn::start(const char *_device, std::function<void(Buffer*)> _callback, int _sample_rate, int _channels) {
-    pause = false;
 
     m_channels = _channels;                         // Had to change to stereo for System76 ! (was mono)
     m_bytes_per_frame = 2 * m_channels;             // 16-bit
@@ -33,6 +31,8 @@ bool AudioIn::start(const char *_device, std::function<void(Buffer*)> _callback,
     
     // Start recording thread... runs independently, writing data into ai->b
     pthread_create(&m_thread, NULL, audioCapture, (void*)this); // this?
+
+    std::cout << "Opening audio in at " << _device << " at " << m_sample_rate << std::endl; 
 
     return true;
 }
@@ -154,37 +154,33 @@ void* AudioIn::audioCapture(void* a) {
     
     while( ! ai->m_quit ) {  // loops around until state of ai kills it
         int n;
-        if( ! ai->pause ) {
 
-            // keep trying to get exactly 1 "period" of raw data from sound card...
-            while ((n = snd_pcm_readi(ai->m_pcm_handle, tmp, ai->getFramesPerPeriod())) < 0 ) {
-                fprintf(stderr, "Error occured while recording: %s\n", snd_strerror(n));
-                snd_pcm_prepare(ai->m_pcm_handle);
-            }
-
-            // printf("snd_pcm_readi got n=%d frames\n", n);
-
-            Byte byte;
-            int read_ptr;
-
-            // read chunk into our buffer ai->b ...
-            for (int i = 0; i < n; i++ ) {
-                read_ptr = i * ai->m_bytes_per_frame;
-
-                // wraps around
-                byte.char_val = tmp[read_ptr];
-                // compute float in [-1/2,1/2) from 16-bit raw... (LSB unsigned char)
-                ai->m_buffer->set(i, (float)tmp[read_ptr + 1] * inv256 + (float)byte.uchar_val * inv256_2);
-            }
-
-            // update index (in one go)
-            ai->m_buffer->offsetIndex(n);
-
-            ai->m_callback(ai->m_buffer);
-
+        // keep trying to get exactly 1 "period" of raw data from sound card...
+        while ((n = snd_pcm_readi(ai->m_pcm_handle, tmp, ai->getFramesPerPeriod())) < 0 ) {
+            fprintf(stderr, "Error occured while recording: %s\n", snd_strerror(n));
+            snd_pcm_prepare(ai->m_pcm_handle);
         }
-        else
-            usleep(10000);  // wait 0.01 sec if paused (keeps thread CPU usage low)
+
+        // printf("snd_pcm_readi got n=%d frames\n", n);
+
+        Byte byte;
+        int read_ptr;
+
+        // read chunk into our buffer ai->b ...
+        for (int i = 0; i < n; i++ ) {
+            read_ptr = i * ai->m_bytes_per_frame;
+
+            // wraps around
+            byte.char_val = tmp[read_ptr];
+            // compute float in [-1/2,1/2) from 16-bit raw... (LSB unsigned char)
+            ai->m_buffer->set(i, (float)tmp[read_ptr + 1] * inv256 + (float)byte.uchar_val * inv256_2);
+        }
+
+        // update index (in one go)
+        ai->m_buffer->offsetIndex(n);
+
+        ai->m_callback(ai->m_buffer);
+
     }
 
     fprintf(stderr, "audioCapture thread exiting.\n");

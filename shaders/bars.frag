@@ -13,7 +13,7 @@ void main (void) {
     vec2 st = gl_FragCoord.xy/u_resolution.xy;
     vec2 pixel = 1.0/u_resolution.xy;
 
-    float press = 256.0;
+    float press = 256.0 * 4.;
     vec2 st_i = floor(st * press) / press;
 
     vec3 hue = texture2D(u_tex0,  pixel * 0.5 + vec2(st_i.x, 0.0)).rgb;
