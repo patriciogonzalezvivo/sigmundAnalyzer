@@ -5,6 +5,8 @@
 #include "analyzer.h"
 #include "videoOut.h"
 
+#include "ops/broadcast.h"
+
 #include <sys/time.h>
 #include <stdlib.h>
 #include <math.h>
@@ -60,10 +62,12 @@ int main(int argc, char** argv) {
     int spectogram_length = 256 / 2;
 
     std::string pitch_path = "";
+    Target      pitch_target;
 
     for (int i = 1; i < argc ; i++) {
         std::string argument = std::string(argv[i]);
 
+        // AUDIO IN
         if (    argument == "--audio" ||
                 argument == "-i" ) {
             if (++i < argc)
@@ -71,6 +75,8 @@ int main(int argc, char** argv) {
             else
                 std::cout << "Argument '" << argument << "' should be followed by the ALSA address for the audio in. Using default: " << audio_path << std::endl;
         }
+
+        // FFT
         else if (argument == "--frequencies" ||
                  argument == "-f" ) {
             if (++i < argc)
@@ -78,6 +84,8 @@ int main(int argc, char** argv) {
             else
                 std::cout << "Argument '" << argument << "' should be followed by the number of frequencies to analize. Using default: " << frequencies << std::endl;
         }
+
+        // SPECTOGRAM
         else if (   argument == "--spectogram" ||
                     argument == "-s" ) {
             if (++i < argc)
@@ -97,7 +105,16 @@ int main(int argc, char** argv) {
             else
                 std::cout << "Argument '" << argument << "' should be followed by the intensity slope for the spectogram. Using default: " << spectogram_intensity_slope << std::endl;
         }
-        
+
+        // PITCH detection
+        else if (   argument == "--pitch" ||
+                    argument == "-p" ) {
+            if (++i < argc)
+                pitch_target = parseTarget(std::string(argv[i]));
+            else 
+                std::cout << "Argument '" << argument << "' should be followed by the pitch detection target. Skipping argument." << std::endl;
+        }
+
     }
 
     AudioIn *audio_in = new AudioIn();
@@ -116,7 +133,6 @@ int main(int argc, char** argv) {
     }
 
     int scroll_count = 0;
-    float prev_main_freq = 0.f;
     int prev_midi_note = -1;
     while (true) {
 
@@ -132,14 +148,17 @@ int main(int argc, char** argv) {
         }
 
         // Pitch detection
-        float main_freq = analyzer->getMainFrequency();
-        int midi_note = analyzer->getMidiNoteFor(main_freq);
-        if (midi_note != prev_midi_note) {
-            prev_midi_note = midi_note;
+        if (pitch_target.protocol != UNKNOWN_PROTOCOL) {
+            float main_freq = analyzer->getMainFrequency();
+            int midi_note = analyzer->getMidiNoteFor(main_freq);
+            if (midi_note != prev_midi_note) {
+                prev_midi_note = midi_note;
 
-            if (midi_note > 0) {
-                std::cout << "Pitch change to " << analyzer->getNoteFor(main_freq);
-                std::cout << analyzer->getOctaveFor(main_freq) << " (MIDI #" << midi_note << " " << main_freq << "Hz)" << std::endl;
+                if (midi_note > 0) {
+                    // std::cout << "Pitch change to " << analyzer->getNoteFor(main_freq);
+                    // std::cout << analyzer->getOctaveFor(main_freq) << " (MIDI #" << midi_note << " " << main_freq << "Hz)" << std::endl;
+                    broadcast(pitch_target, "pitch", midi_note);
+                }
             }
         }
 

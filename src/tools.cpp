@@ -71,6 +71,8 @@ int mod( int i, int base ) {  // true modulo (handles negative) into our buffer 
 void fillWindowFunc(WindowFunctionType _type, float *w, int N) {
     float W = 0.0f;
     int i;
+
+
     
     switch (_type) {
         case NO_WINDOW:  
@@ -81,9 +83,10 @@ void fillWindowFunc(WindowFunctionType _type, float *w, int N) {
 
         case HANN_WINDOW:  
         // C^1 cont, so third-order tails
+        // https://github.com/adamstark/BTrack/blob/master/src/OnsetDetectionFunction.cpp#L672
             W = N/2.0F;
             for( i=0; i<N; ++i)
-                w[i] = (1.0f + cos(M_PI*(i-W)/W))/2;
+                w[i] = 0.5 * (1.0f + cos(M_PI*(i-W)/W));
             break;
 
         case TRUNCATED_GAUSSIAN_WINDOW:  

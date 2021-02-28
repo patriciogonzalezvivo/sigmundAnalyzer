@@ -9,11 +9,12 @@ You will need to install the following dependencies:
 * [v4l2LoopBack](https://github.com/umlaeute/v4l2loopback) this is not require to compile but is crucial for sigmund to stream the data to a video device
 * FFTW3
 * Alsa
+* Liblo
 
 Assuming an ubuntu linux system you shuld install those dependencies doing this:
 
 ```
-sudo apt-get install libfftw3-dev libasound2 libasound2-dev v4l2loopback-dkms v4l2loopback-utils
+sudo apt-get install libfftw3-dev libasound2 libasound2-dev v4l2loopback-dkms v4l2loopback-utils liblo-dev
 ```
 
 Clone, compile and install:

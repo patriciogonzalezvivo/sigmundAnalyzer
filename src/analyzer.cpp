@@ -69,8 +69,8 @@ void Analyzer::update(Buffer* _buffer) {
 }
 
 int Analyzer::getMidiNoteFor(float _freq) {
-    int midi = (int)roundf(12*logf(_freq/440.0)+69);
-    if (midi >= 32)
+    int midi = (int)roundf(12*logf(_freq/261.626)/logf(2.0))+60;
+    if (midi >= 17)
         return midi;
     else
         return -1;
